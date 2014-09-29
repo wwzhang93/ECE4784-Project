@@ -1,12 +1,13 @@
-%ECE 4784
+%% ECE 4784 %%
 %Project Phase 1
 %William Zhang
 %Due September, 29th 2014
 
-%%Constants Provided:
+%% Constants Provided:
 simTtot = 100; %100 ms total simulation time
 step = .02;
 t = 0 : step : simTtot; %create time vector using .01 steps between data points
+I = zeros(1, length(t)); % Current vector must be same size as time vector
 
 %Maximum Conductances
 gKBAR = 36; %36 mS/cm^2
@@ -26,29 +27,30 @@ betam(1) = 4*exp(-V(1)/18);
 alphan(1) = 0.01.*((10-V(1))/(exp((10-V(1))/10)-1));
 betan(1) = 0.125*exp(-V(1)/80);
 alphah(1) = 0.07*exp(-V(1)/20);
-betah(1) = 1/((exp(30-V(1))/10)+1);
+betah(1) = 1/(exp((30-V(1))/10)+1);
 
 %Initial Values:
 m(1) = alpham(1)/(alpham(1)+betam(1));
 n(1) = alphan(1)/(alphan(1)+betan(1));
 h(1) = alphah(1)/(alphah(1)+betah(1));
 
-%%Injected Current
-amp = input('Enter the amplitude of the injected current (in uA/cm^2): ');
-dur = input('Enter the duration of the injected current [between 0 and 100 ms]: ');
-I = zeros(1, length(t)); % Setting up I to be the same size as the time array
-for y = 1:dur/step % injected current goes from 0 to (duration entered / time step), elsewhere is 0
-I(y) = amp;
+%% Current - Input based for stimulation purposes
+a = input('Desired amplitude of current? (in uA/cm^2): '); %%inputs asking for desired characteristics
+d = input('Desired duration of current? must be between 0 and 100 ms): ');
+for i = 1:d/step % injected current goes from 0 to (duration entered / time step), elsewhere is 0
+I(i) = a;
 end
 
 
-for j = 1 : length(t)-1
-    alpham = 0.1.*((25-V(j))/(exp((25-V(j))/10)-1));
+%% Euler's Method
+j = 1; %initialize loop index
+while j < length(t)
+    alpham = 0.1*((25-V(j))/(exp((25-V(j))/10)-1));
     betam = 4*exp(-V(j)/18);
-    alphan = 0.01.*((10-V(j))/(exp((10-V(j))/10)-1));
+    alphan = 0.01*((10-V(j))/(exp((10-V(j))/10)-1));
     betan = 0.125*exp(-V(j)/80);
     alphah = 0.07*exp(-V(j)/20);
-    betah = 1/((exp(30-V(j))/10)+1);
+    betah(1) = 1/(exp((30-V(j))/10)+1);
     
     gK(j) = n(j)^4*gKBAR;
     gNa(j) = m(j)^3*gNaBAR *h(j);
@@ -63,11 +65,32 @@ for j = 1 : length(t)-1
     derivn = alphan*(1-n(j))-betan*n(j);
     derivh = alphah*(1-h(j))-betah*h(j);
     
-    m(j+1) = m(j)+step.*derivm;
-    n(j+1) = n(j)+step.*derivn;
-    h(j+1) = h(j)+step.*derivh;
+    m(j+1) = m(j)+step*derivm;
+    n(j+1) = n(j)+step*derivn;
+    h(j+1) = h(j)+step*derivh;
     
     derivV(j) = iIon(j)/Cm;
     V(j+1) = V(j)+step*derivV(j);
     
+    j=j+1;
 end
+
+%% Plots of Data
+%Voltage
+V = V + VRest; %sets action potential starting voltage to -70mV 
+subplot(2,1,1) %subplot for both graphs on one figure
+plot(t,V) 
+title('Membrane Potential'); %labels
+xlabel('Time [ms]');
+ylabel('Membrane Voltage [mV]');
+legend('Vm');
+axis([0, 100, -100, 40]);
+
+%Conductances
+t2 = t(1:length(t)-1); % Time vector must match length of conductances
+subplot(2,1,2);
+plot(t2, gNa, 'g', t2, gK, 'b', t2, gL, 'r')
+title('gK, gNa, gL')
+xlabel('Time [ms])')
+ylabel('Conductance [mS/cm^2]')
+legend('gNa','gK', 'gL')
