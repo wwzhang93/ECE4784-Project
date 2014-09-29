@@ -5,8 +5,8 @@
 
 %% Constants Provided:
 simTtot = 100; %100 ms total simulation time
-step = .02;
-t = 0 : step : simTtot; %create time vector using .01 steps between data points
+step = input('Enter desired time step resolution for simulation [must be below .05ms]: '); %degree of freedom for resolution
+t = 0 : step : simTtot; %create time vector using inputted step between data points
 I = zeros(1, length(t)); % Current vector must be same size as time vector
 
 %Maximum Conductances
@@ -35,9 +35,9 @@ n(1) = alphan(1)/(alphan(1)+betan(1));
 h(1) = alphah(1)/(alphah(1)+betah(1));
 
 %% Current - Input based for stimulation purposes
-a = input('Desired amplitude of current? (in uA/cm^2): '); %%inputs asking for desired characteristics
+a = input('Desired amplitude of current? (in uA/cm^2): '); %inputs asking for desired characteristics
 d = input('Desired duration of current? must be between 0 and 100 ms): ');
-for i = 1:d/step % injected current goes from 0 to (duration entered / time step), elsewhere is 0
+for i = 1:d/step % filling in vector where current is desired.
 I(i) = a;
 end
 
@@ -52,25 +52,25 @@ while j < length(t)
     alphah = 0.07*exp(-V(j)/20);
     betah(1) = 1/(exp((30-V(j))/10)+1);
     
-    gK(j) = n(j)^4*gKBAR;
+    gK(j) = n(j)^4*gKBAR; %Membrane conductances - finding based n, m, and h
     gNa(j) = m(j)^3*gNaBAR *h(j);
     gL(j) = gLBAR;
     
-    iK(j) = gK(j)*(V(j)-EK);
+    iK(j) = gK(j)*(V(j)-EK); %Current equation definitions
     iNa(j) = gNa(j)*(V(j)-ENa);
     iL(j) = gL(j)*(V(j)-EL);
     iIon(j) = I(j)-iNa(j)-iK(j)-iL(j);
     
-    derivm = alpham*(1-m(j))-betam*m(j);
-    derivn = alphan*(1-n(j))-betan*n(j);
+    derivm = alpham*(1-m(j))-betam*m(j); %Euler's method - determining derivative
+    derivn = alphan*(1-n(j))-betan*n(j); %based on curent alpha and beta values
     derivh = alphah*(1-h(j))-betah*h(j);
     
-    m(j+1) = m(j)+step*derivm;
+    m(j+1) = m(j)+step*derivm; %Stepping m, n, and h values based on the derivation
     n(j+1) = n(j)+step*derivn;
     h(j+1) = h(j)+step*derivh;
     
     derivV(j) = iIon(j)/Cm;
-    V(j+1) = V(j)+step*derivV(j);
+    V(j+1) = V(j)+step*derivV(j); %final voltage calculation based on equation given to us
     
     j=j+1;
 end
@@ -90,7 +90,7 @@ axis([0, 100, -100, 40]);
 t2 = t(1:length(t)-1); % Time vector must match length of conductances
 subplot(2,1,2);
 plot(t2, gNa, 'g', t2, gK, 'b', t2, gL, 'r')
-title('gK, gNa, gL')
+title('gK, gNa, gL') %lables
 xlabel('Time [ms])')
 ylabel('Conductance [mS/cm^2]')
 legend('gNa','gK', 'gL')
